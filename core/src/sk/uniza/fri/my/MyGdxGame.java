@@ -6,74 +6,71 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import java.util.ArrayList;
 
 public class MyGdxGame extends ApplicationAdapter {
 
-    SpriteBatch batch;
-    Texture img;
-
-    private float obrX;
-    private float obrY;
-
+   private SpriteBatch batch;
+    private Texture textura;
+    
+    private PosuvnyObrazok hlavnyObrazok;
+    private ArrayList<AutomatickyPosuvnyObrazok> zoznamObrazkov = new ArrayList<AutomatickyPosuvnyObrazok>();
+    
     @Override
     public void create() {
         this.batch = new SpriteBatch();
-        this.img = new Texture("badlogic.jpg");
-        
-        // zaciname v strede
-        this.obrX = (Gdx.graphics.getWidth() - this.img.getWidth()) / 2;
-        this.obrY = (Gdx.graphics.getHeight() - this.img.getHeight()) / 2;
+        this.textura = new Texture("badlogic.jpg");
+        this.hlavnyObrazok = new PosuvnyObrazok(this.textura, 0, 0);
     }
 
     @Override
     public void render() {
-        Gdx.gl.glClearColor(0, 0, 0.8f, 1);
+        Gdx.gl.glClearColor(0, 0, 0.2f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         
-        // Ak klikneme pravym tlacidlom mysi, nastavime poziciu obrazka
+        // Premiestnovanie pomocou klavesnice
+        final int velkostKroku = 200;
+        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+            this.hlavnyObrazok.posunVpravo(velkostKroku * Gdx.graphics.getDeltaTime());
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+            this.hlavnyObrazok.posunVlavo(velkostKroku * Gdx.graphics.getDeltaTime());
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
+            this.hlavnyObrazok.posunHore(velkostKroku * Gdx.graphics.getDeltaTime());
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
+            this.hlavnyObrazok.posunDole(velkostKroku * Gdx.graphics.getDeltaTime());
+        }
+        
+        // Ked klikneme pravym tlacidlom mysi, mozeme premiestnovat hlavny obrazok
         if (Gdx.input.isButtonPressed(Input.Buttons.RIGHT)) {
-            
-            // Najskor si ziskame poziciu mysi (v pripade Y-ovej suradnice, 
-            // musime prepocitat na suradnice obrazka, ktore zacinaju v lavom 
-            // DOLNOM rohu, pricom suradnice z mysi zacinaju v lavom HORNOM rohu)
-            int mysX = Gdx.input.getX();
-            int mysY = Gdx.graphics.getHeight() - 1 - Gdx.input.getY();
-            
-            // Nastavime poziciu textury - tam, kde sme klikli, bude stred obrazka,
-            // preto delime sirku a aj vysku dvojkou
-            this.obrX = mysX - this.img.getWidth() / 2;
-            this.obrY = mysY - this.img.getHeight() / 2;
-        }
-        
-        // dolny okraj
-        if (this.obrX < 0) {
-            this.obrX = 0;
-        }
-        
-        // horny okraj
-        if (this.obrX + this.img.getWidth() > Gdx.graphics.getWidth() - 1) {
-            this.obrX = Gdx.graphics.getWidth() - 1 - this.img.getWidth();
-        }
-        
-        // lavy okraj
-        if (this.obrY < 0) {
-            this.obrY = 0;
-        }
-        
-        // pravy okraj
-        if (this.obrY + this.img.getHeight() > Gdx.graphics.getHeight() - 1) {
-            this.obrY = Gdx.graphics.getHeight() - 1 - this.img.getHeight();
-        }                   
-        
-        // Vykreslime obrazok na definovanej pozicii
+            float poziciaMysiX = Gdx.input.getX();
+            float poziciaMysiY = Gdx.graphics.getHeight() - 1 - Gdx.input.getY();
+            this.hlavnyObrazok.premiestniNaStred(poziciaMysiX, poziciaMysiY);
+        }            
+               
+        // justTouched sa vykona iba raz - keby pouzijeme namiesto neho iba isTouched, 
+        // vytvorarali by sme niekolko objektov az dokial nepustime tlacidlo mysi
+        if (Gdx.input.justTouched() && Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
+            float poziciaMysiX = Gdx.input.getX();
+            float poziciaMysiY = Gdx.graphics.getHeight() - 1 - Gdx.input.getY();
+            this.zoznamObrazkov.add(new AutomatickyPosuvnyObrazok(this.textura, poziciaMysiX, poziciaMysiY));            
+        }        
+ 
         this.batch.begin();
-        this.batch.draw(this.img, this.obrX, this.obrY);
+        // Vykreslime vsetky pridane obrazky
+        for (AutomatickyPosuvnyObrazok mojObrazok : this.zoznamObrazkov) {
+            mojObrazok.vykresli(this.batch);
+        }
+        // Vykreslime hlavny obrazok
+        this.hlavnyObrazok.vykresli(this.batch);
         this.batch.end();
     }
 
     @Override
     public void dispose() {
         this.batch.dispose();
-        this.img.dispose();
+        this.textura.dispose();
     }
 }
